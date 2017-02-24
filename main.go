@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/opts"
-	flag "github.com/docker/docker/pkg/mflag"
+	flag "github.com/spf13/pflag"
 
 	dockerClient "github.com/fsouza/go-dockerclient"
 )
@@ -77,11 +77,11 @@ func parseContext(args []string) (*Context, error) {
 
 	flCgroups := opts.NewListOpts(nil)
 
-	flags.StringVar(&c.PidFile, []string{"p", "-pid-file"}, "", "pipe file")
-	flags.BoolVar(&c.Logs, []string{"l", "-logs"}, true, "pipe logs")
-	flags.BoolVar(&c.Notify, []string{"n", "-notify"}, false, "setup systemd notify for container")
-	flags.BoolVar(&c.Env, []string{"e", "-env"}, false, "inherit environment variable")
-	flags.Var(&flCgroups, []string{"c", "-cgroups"}, "cgroups to take ownership of or 'all' for all cgroups available")
+	flags.StringVarP(&c.PidFile, "pid-file", "p", "", "pipe file")
+	flags.BoolVarP(&c.Logs, "logs", "l", true, "pipe logs")
+	flags.BoolVarP(&c.Notify, "notify", "n", false, "setup systemd notify for container")
+	flags.BoolVarP(&c.Env, "env", "e", false, "inherit environment variable")
+	flags.VarP(&flCgroups, "cgroups", "c", "cgroups to take ownership of or 'all' for all cgroups available")
 
 	err := flags.Parse(args)
 	if err != nil {
