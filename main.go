@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/opts"
-	flag "github.com/docker/docker/pkg/mflag"
+	flag "github.com/spf13/pflag"
 
 	dockerClient "github.com/fsouza/go-dockerclient"
 )
@@ -77,13 +77,22 @@ func parseContext(args []string) (*Context, error) {
 
 	flCgroups := opts.NewListOpts(nil)
 
-	flags.StringVar(&c.PidFile, []string{"p", "-pid-file"}, "", "pipe file")
-	flags.BoolVar(&c.Logs, []string{"l", "-logs"}, true, "pipe logs")
-	flags.BoolVar(&c.Notify, []string{"n", "-notify"}, false, "setup systemd notify for container")
-	flags.BoolVar(&c.Env, []string{"e", "-env"}, false, "inherit environment variable")
-	flags.Var(&flCgroups, []string{"c", "-cgroups"}, "cgroups to take ownership of or 'all' for all cgroups available")
+	flags.StringVarP(&c.PidFile, "pid-file", "p", "", "pipe file")
+	flags.BoolVarP(&c.Logs, "logs", "l", true, "pipe logs")
+	flags.BoolVarP(&c.Notify, "notify", "n", false, "setup systemd notify for container")
+	flags.BoolVarP(&c.Env, "env", "e", false, "inherit environment variable")
+	flags.VarP(&flCgroups, "cgroups", "c", "cgroups to take ownership of or 'all' for all cgroups available")
 
-	err := flags.Parse(args)
+	i := findRunArg(args)
+	if i < 0 {
+		log.Println("Args:", args)
+		return nil, errors.New("run not found in arguments")
+	}
+
+	ownArgs := args[:i]
+	runArgs := args[i+1:]
+
+	err := flags.Parse(ownArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -91,13 +100,6 @@ func parseContext(args []string) (*Context, error) {
 	foundD := false
 	var name string
 
-	runArgs := flags.Args()
-	if len(runArgs) == 0 || runArgs[0] != "run" {
-		log.Println("Args:", runArgs)
-		return nil, errors.New("run not found in arguments")
-	}
-
-	runArgs = runArgs[1:]
 	newArgs := make([]string, 0, len(runArgs))
 
 	for i, arg := range runArgs {
@@ -143,6 +145,15 @@ func parseContext(args []string) (*Context, error) {
 	setupEnvironment(c)
 
 	return c, nil
+}
+
+func findRunArg(args []string) int {
+	for i, arg := range args {
+		if arg == "run" {
+			return i
+		}
+	}
+	return -1
 }
 
 func lookupNamedContainer(c *Context) error {
@@ -262,7 +273,7 @@ func getClient(c *Context) (*dockerClient.Client, error) {
 		endpoint = "unix:///var/run/docker.sock"
 	}
 
-	return dockerClient.NewVersionedClient(endpoint, "1.12")
+	return dockerClient.NewVersionedClient(endpoint, "1.24")
 }
 
 func getContainerPid(c *Context) (int, error) {
