@@ -1,0 +1,36 @@
+language: go
+
+env:
+  global:
+  - secure: MtOU18h7Il77j2sokGe/ifulaQq3YsWmfDUfv20LczJPMk88obQ/MYXDs/t9kkAWca+359gUChPbe7/zG+xsdXhw231EzB45CbTvMk1TTEBjKs01gd9y6u/smQa5gIjqmCOqEsJYEIFsdKAqYtIvkzm0/vCmI9W9aJNupBiCrKb16WluAW1tTi41K+//D9UI6aWsd0rtz+WavKkqyrPzAyp7M3rUQLxZctD+FuvhLPyW3Ec1BMQjp3//b8Sp9auhFKtwG86BBjsB5PV4AHHceOd+1xaOOTcbEchilAUqt+ikPa2kPWueZ3tUsdJNgbPtDpYeAfy89Y2L++GiRE56wsDrZX1O7N4CgoG6tYn9djxEYi2YyoHFDMR27ZI9F3urWvpfwlsK+Bt4hW5u910GLsQe3Ru8+z1O09tamfGokqEv5/lFFj4mw8ERtHCY2GBRbZ0RG/SLCxEzlTBskpd71ow7xxDJTbQ+mgB2enry2Zp4TvGeusRF6jhc/GHOF8dd61fgTqVYSor3ZpXLJUCCrP+dFuulbncaJFMbpvwVjoKde8lYz6JOxkUDGBGMSF3pgJvylHwzG4kDqhrhQR2WL0jGtk7qSJFERpvX3h1orgfnnAyI+Ca8FuESi5Sz/Rl1i8U0TSd4ZfE8fwhkvAq2u1rH+kyh1r5Q+K6jWOBFOdE=
+  - secure: VPEdpP4qz49EUQ3kCS/EWuZzQv68z5M9RAZkKxVUMvyjrG2BvMMdG16A0lFA2rElo07pKfDL/rTwS6dlVj7TTNGkME9pXus6UnOpbNWI4pAldKs3zch7ZetiTrm4CiSdikW5QtyxNQxyZLzkL+vA4NOv6AcyQkjgXjIN6uN7AXaUQ+1D233/99KiOdr/siTXAbGzgnBWKYX5y9mP3q237Q/W4w5FFY8za0AbwxTDpN8k4M00d0eBnphihhtuHJeV6h8xzF65J3JtmJlwifzaLO5cwU2v3nFQ9XYNNsFVksihmpsVnpxscBkxky7ULgKWYSCovwsJH9mcBqxU02VG/DQInZZ2exLvsolfpQLSKwo2LOfafv9RgvC8g6xfAh0eWFdBFCfqOOo4q2z9ph1rleMjlpSmRtKsjEtUYKDq7RtOYRXRyKrnJQQN83HHEcseUs7KdB7cOM4sJY8PF1fti1avFv0WRvrNPBOkEzr+u6tB6ZqyDsjwijTj1vdgVzPtG3ykHoFwPO3avlDMbsAB4mvYqh1Z20J97/G6AS8LPuCAMRhYBny5CNpgsIjwS+acY5BfXaZuiqYS3UBE//6wZ2XRnjiC/ti9au0kaMv6lRIl9OoTssnZaFgclxcVLGiwuscmcW6GitrFysH1o1qM8VaT25DJpOUk54HnNe3eUlI=
+  - secure: ZsIgeGrXzXgoMLatn1JQi46MhpAzY9RoD9x/usZwKVaMoPazoFFE297Cu+h30Be5/zWu+jnyGnhhCb913RR9DuaF4cbvbCqlj5+vefXyi4efpwWD38T6nHndjkxj2x8HrHbw6ntLw0bMWoeN1FyhH6M/poksEBGKhLrVBu1gpHe3IP5wa3v2Jox9J8nYK0aW9rdUna1bzVNIXFBOkCmurAuvzHWoNwlYgQxZxnaCBUNQX3bCln5EqTsArXA97l2kJqg0mrZ7qqny2thFUDWbz+FXVwkcINExdxR6YOP0BtnAR625NDwDQJHt07pdTsRjMQzlllFjZ+dH63a4t2srUMcKqBZ+dCBVf9VVkaXfqLsA/K7vUFA7USGsJcKrh+3LXIemZTNcVOi2afUK3JfmXnOmVqm2q+0QtMvPDK48EihWZ0V9/U4jb447CwQimyDLGTv5sTxNxuoYF7qvSRjRz30vDvsjelVr32V4tSeexqUZ1U6ZK+ckltAHNR50FAD5uFb7ncqp5oaxlRbcMnDM5Ix6gwVjJstJPMEo904o/PI47GEaZqMB6Q6IkxxoRCiP5I5LuGTTpy2il158ms9sWX4ZZlmVmEtFhaMPtHMP7FSUF82P3HY0kDLWX0Hi6nRxEo1pMxmVPICMr3Z3JCKOVPYtHSgRek4HnRi2C6wvb44=
+  - COMMIT=${TRAVIS_COMMIT::8}
+  - VERSION_ROCKER=0.2.2
+
+before_install:
+  - add-apt-repository ppa:masterminds/glide -y
+  - apt-get update
+  - apt-get install glide -y
+
+before_test:
+  - glide install
+  - bundle install
+
+before_deploy: "env
+  ROCKER_REPO=https://github.com/grammarly/rocker
+  ROCKER_FILE=rocker-${VERSION_ROCKER}_linux_amd64.tar.gz
+  ROCKER_DIST=${ROCKER_REPO}/releases/${ROCKER_VERSION}/${ROCKER_FILE}
+  curl -L ${ROCKER_DIST} | tar xvfz"
+
+deploy:
+  provider: script
+  script: "cd image && ./rocker build
+    --auth ${DOCKER_USER}:${DOCKER_PASS}
+    --push
+    -var TRAVIS_BUILD_NUMBER=${TRAVIS_BUILD_NUMBER}
+    -var COMMIT=${COMMIT}"
+  on:
+    tags: true
+    branch: master
+
